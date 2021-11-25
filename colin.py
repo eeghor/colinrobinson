@@ -33,6 +33,15 @@ def is_amount(value_list: List[Any]):
     else:
         return False
 
+def get_average_distinct_tokens(value_list: List[Any]):
+
+    distinct_tokens = set()
+
+    for s in value_list:
+        distinct_tokens |= set(str(s).lower().split())
+
+    return len(distinct_tokens)/len(value_list)
+
 if __name__ == '__main__':
 
     list_ = ["$",'AUD', 0, 'RUB', 'midd', None, 'dsfds']
@@ -45,6 +54,8 @@ if __name__ == '__main__':
     print(is_amount(list_))
 
     print(is_amount([None, 1.132, 10, 35, "a"]))
+
+    print(get_average_distinct_tokens(['aaa', 'aaa e12', 'aaa fqq']))
 
 
 
