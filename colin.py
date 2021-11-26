@@ -1,22 +1,48 @@
 import pandas as pd
-from typing import List, Any
+from typing import List, Any, Iterable
 from currencies import Currency
 import string
+import numpy as np
 
 currency = Currency()
+currency_symbols = {u.encode().decode() for u in set(currency.SYMBOLS)}
 
-def is_currency(value_list: List[Any]):
+class ColumnAllocator:
 
-    currency_symbols = {u.encode().decode() for u in set(currency.SYMBOLS)}
+    def __init__(self):
+        pass
 
-    if (
-        (list_length := len(value_list)) and 
-        sum(str(s).upper() in (currency.CODES | currency_symbols) for s in value_list) >= min(1, list_length//2)
-        ):
-        print('found at least ', min(1, list_length//2), ' currency symbols')
-        return True
-    else:
-        return False
+    def _get_currency_name_score(self, value_list: Iterable[Any]) -> float:
+
+        all_words = [w.strip() for v in value_list for w in str(v).split()]
+
+        distinct_tokens = {w.lower() for w in all_words}
+
+        total_punctuations = sum(1 for t in all_words for ch in t if ch in string.punctuation) 
+
+        currency_code_ocurrences = len([w for w in all_words if w.upper() in currency.CODES])
+        currency_symbol_ocurrences = len([w for w in all_words if w.upper() in currency_symbols])
+        word_lengths = (len(w) for w in all_words)
+
+        currency_name_score = currency_code_ocurrences + currency_symbol_ocurrences + ( 2 <= np.mean(list(word_lengths)) <= 3)
+
+        print('currency_name_score=', currency_name_score)
+        print('total_punctuations=', total_punctuations)
+
+
+
+    def is_currency_name(value_list: Iterable[Any]):
+    
+        
+    
+        if (
+            (list_length := len(value_list)) and 
+            sum(str(s).upper() in (currency.CODES | currency_symbols) for s in value_list) >= min(1, list_length//2)
+            ):
+            print('found at least ', min(1, list_length//2), ' currency symbols')
+            return True
+        else:
+            return False
 
 def is_amount(value_list: List[Any]):
 
@@ -61,12 +87,16 @@ def get_description_score(value_list: List[Any]):
 
 if __name__ == '__main__':
 
+    ca = ColumnAllocator()
+
     list_ = ["$",'AUD', 0.091, 'RUB', 'midd', None, 'dsfds', '89.95%']
 
-    if is_currency(list_):
-        print(f'list {list_} contains currencies')
-    else:
-        print(f'list {list_} has no currencies')
+    print('currency score=', ca._get_currency_name_score(list_))
+
+    # if is_currency_name(list_):
+    #     print(f'list {list_} contains currencies')
+    # else:
+    #     print(f'list {list_} has no currencies')
 
     print(is_amount(list_))
 
