@@ -22,53 +22,31 @@ class ColumnAllocator:
 	CURRENCY_SYMBOLS = {"\u0024": "USD", "\u00A3": "GBP", "\u00A5": "JPY", "\u0E3F": "THB", "\u20BD": "RUB",
 						"\u20B9": "INR", "\u20AC": "EUR"}
 
-	def __init__(self):
-		pass
+	def score_input(self, value_list: Iterable[Any], sep: str=' ') -> float:
 
-	def _get_stats(self, value_list: Iterable[Any], sep: str=' ') -> float:
-
-		tokens = [w for s in value_list for w in re.split(sep, str(s))]
-
-		print(tokens)
+		tokens = [w.strip() for s in value_list for w in re.split(sep, str(s))]
 
 		floatables = re.findall(r'\d+\.\d+', ' '.join(tokens))
 
-		print(floatables)
-
 		punctuations = [ch for ch in ' '.join(tokens) if ch in string.punctuation]
-
-		print(punctuations)
 
 		currency_codes = [t for t in tokens if t.upper() in self.CURRENCY_CODES]
 
-		print(currency_codes)
-
-		currency_symbols = [t for t in tokens if t.upper() in self.CURRENCY_SYMBOLS]
-
-		print(currency_symbols)
+		currency_symbols = [t for t in tokens if t in self.CURRENCY_SYMBOLS]
 
 		word_lengths = [len(t) for t in tokens]
 
-		print(word_lengths)
+		score = {'currency_name': len(currency_codes) + len(set(currency_symbols)) + sum([2 <= l <= 3 for l in word_lengths]),
+				 'amount': len(floatables) + len(set(currency_symbols)), 
+				 'description': len(punctuations) + np.mean(word_lengths)}
+
+		return score
+
 
 if __name__ == '__main__':
 
 	ca = ColumnAllocator()
 
-	list_ = ["$",'AUD', 0.091, 'RUB', 'midd', None, 'dsfds', '89.95%']
+	list_ = ["$",'AUD', 0.091, 'RUB', 'midd', None, 'dsfds', '89.95%', 3]
 
-	print('currency score=', ca._get_stats(list_))
-
-	# if is_currency_name(list_):
-	#     print(f'list {list_} contains currencies')
-	# else:
-	#     print(f'list {list_} has no currencies')
-
-	print(is_amount(list_))
-
-	print(is_amount([None, 1.132, 10, 35, "a"]))
-
-	print(get_description_score(['aaa', 'aaa e12', 'aaa fqq', 'well, this is 69.95$', '12:23-1uuu']))
-
-
-
+	print('currency score=', ca.score_input(list_))
