@@ -6,6 +6,16 @@ import numpy as np
 
 class ColumnAllocator:
 
+	"""
+    This class looks at the columns of a supplied data frame and decides which of them
+    should be 
+
+     - amout
+     - currency
+     - description
+     - coding
+    """
+
 	CURRENCY_CODES = set("""USD EUR GBP INR AUD CAD SGD CHF MYR JPY CNY NZD THB HUF AED HKD 
 							MXN ZAR PHP SEK IDR SAR BRL TRY KES KRW EGP IQD NOK KWD RUB DKK
 							PKR ILS PLN QAR XAU OMR COP CLP TWD ARS CZK VND MAD JOD BHD XOF 
@@ -41,6 +51,14 @@ class ColumnAllocator:
 				 'description': len(punctuations) + np.mean(word_lengths)}
 
 		return score
+
+	def allocate_columns(self, data: pd.DataFrame = None):
+
+		for c in data.columns:
+
+			scores = self.score_input(data[c])
+
+
 
 
 if __name__ == '__main__':
