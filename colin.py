@@ -7,14 +7,20 @@ import numpy as np
 class ColumnAllocator:
 
 	"""
-    This class looks at the columns of a supplied data frame and decides which of them
-    should be 
+	This class looks at the columns of a supplied data frame and decides which of them
+	should be 
 
-     - amout
-     - currency
-     - description
-     - coding
-    """
+	 - amout
+	 - currency
+	 - description
+	 - coding
+	"""
+
+	def _tokenized(self, value_list: Iterable[Any], sep: str=' ') -> str:
+		for s in value_list:
+			for w in re.split(sep, str(s)):
+				yield w.strip()
+
 
 	CURRENCY_CODES = set("""USD EUR GBP INR AUD CAD SGD CHF MYR JPY CNY NZD THB HUF AED HKD 
 							MXN ZAR PHP SEK IDR SAR BRL TRY KES KRW EGP IQD NOK KWD RUB DKK
@@ -29,28 +35,28 @@ class ColumnAllocator:
 							SHP JEP TMT TVD IMP GGP ZMW""".split())
 
 	# source: https://unicode.org/charts/PDF/U20A0.pdf
-	CURRENCY_SYMBOLS = {"\u0024": "USD", "\u00A3": "GBP", "\u00A5": "JPY", "\u0E3F": "THB", "\u20BD": "RUB",
-						"\u20B9": "INR", "\u20AC": "EUR"}
+	CURRENCY_SYMBOLS = {k.encode().decode(): v for k, v in {"\u0024": "USD", "\u00A3": "GBP", "\u00A5": "JPY", "\u0E3F": "THB", "\u20BD": "RUB",
+															"\u20B9": "INR", "\u20AC": "EUR"}.items()}
 
-	def score_input(self, value_list: Iterable[Any], sep: str=' ') -> float:
+	def score_input(self, value_list: Iterable[Any]) -> float:
 
-		tokens = [w.strip() for s in value_list for w in re.split(sep, str(s))]
+		floatables = 0
+		punctuations = 0
+		currency_codes = 0
+		currency_symbols = 0
+		word_lengths = 0
 
-		floatables = re.findall(r'\d+\.\d+', ' '.join(tokens))
+		for token in self._tokenized(value_list):
 
-		punctuations = [ch for ch in ' '.join(tokens) if ch in string.punctuation]
+			print(token)
 
-		currency_codes = [t for t in tokens if t.upper() in self.CURRENCY_CODES]
+			floatables += len(re.findall(r'\d+\.\d+', token))
+			punctuations += sum(1 for ch in token if ch in string.punctuation)
+			currency_codes += (token.upper() in self.CURRENCY_CODES)
+			currency_symbols += (token in self.CURRENCY_SYMBOLS)
+			word_lengths += len(token)
 
-		currency_symbols = [t for t in tokens if t in self.CURRENCY_SYMBOLS]
-
-		word_lengths = [len(t) for t in tokens]
-
-		score = {'currency_name': len(currency_codes) + len(set(currency_symbols)) + sum([2 <= l <= 3 for l in word_lengths]),
-				 'amount': len(floatables) + len(set(currency_symbols)), 
-				 'description': len(punctuations) + np.mean(word_lengths)}
-
-		return score
+		print(f"floatables={floatables}, punctuations={punctuations}, currency_codes={currency_codes}, currency_symbols={currency_symbols}, word_lengths={word_lengths}")
 
 	def allocate_columns(self, data: pd.DataFrame = None):
 
@@ -65,6 +71,6 @@ if __name__ == '__main__':
 
 	ca = ColumnAllocator()
 
-	list_ = ["$",'AUD', 0.091, 'RUB', 'midd', None, 'dsfds', '89.95%', 3]
+	list_ = ["$",'AUD', 0.091, 'RUB', 'midd', None, 'dsfds', '89.95%', 3, "\u20B9".encode().decode()]
 
-	print('currency score=', ca.score_input(list_))
+	ca.score_input(list_)
