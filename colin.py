@@ -40,21 +40,20 @@ class ColumnAllocator:
 
 	def score_input(self, value_list: Iterable[Any]) -> float:
 
-		floatables = 0
-		punctuations = 0
-		currency_codes = 0
-		currency_symbols = 0
-		word_lengths = 0
+		floatables = punctuations = currency_codes = 0
+		currency_symbols = word_lengths = 0
+
+		total_values = len(value_list)
 
 		for token in self._tokenized(value_list):
 
-			print(token)
-
 			floatables += len(re.findall(r'\d+\.\d+', token))
-			punctuations += sum(1 for ch in token if ch in string.punctuation)
+			punctuations += sum(ch in string.punctuation for ch in token)
 			currency_codes += (token.upper() in self.CURRENCY_CODES)
 			currency_symbols += (token in self.CURRENCY_SYMBOLS)
 			word_lengths += len(token)
+
+		is_amount = True if floatables/total_values >= 0.5 else False
 
 		print(f"floatables={floatables}, punctuations={punctuations}, currency_codes={currency_codes}, currency_symbols={currency_symbols}, word_lengths={word_lengths}")
 
