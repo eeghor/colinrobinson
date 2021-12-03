@@ -54,6 +54,7 @@ class ColumnAllocator:
 			word_lengths += len(token)
 
 		is_amount = True if floatables/total_values >= 0.5 else False
+		is_currency_name = True if (currency_codes + currency_symbols)/total_values > 0.5
 
 		print(f"floatables={floatables}, punctuations={punctuations}, currency_codes={currency_codes}, currency_symbols={currency_symbols}, word_lengths={word_lengths}")
 
