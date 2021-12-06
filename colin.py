@@ -1,4 +1,5 @@
 import pandas as pd
+from collections import defaultdict
 from typing import List, Any, Iterable
 import string
 import re
@@ -40,37 +41,66 @@ class ColumnAllocator:
 
 	def score_input(self, value_list: Iterable[Any]) -> float:
 
-		floatables = punctuations = currency_codes = 0
-		currency_symbols = word_lengths = 0
+		average_per_row = defaultdict(float)
 
 		total_values = len(value_list)
 
 		for token in self._tokenized(value_list):
 
-			floatables += len(re.findall(r'\d+\.\d+', token))
-			punctuations += sum(ch in string.punctuation for ch in token)
-			currency_codes += (token.upper() in self.CURRENCY_CODES)
-			currency_symbols += (token in self.CURRENCY_SYMBOLS)
-			word_lengths += len(token)
+			average_per_row['floatables'] += len(re.findall(r'\d+\.\d+', token))/total_values
+			average_per_row['punctuations'] += sum(ch in string.punctuation for ch in token)/total_values
+			average_per_row['currency_codes'] += (token.upper() in self.CURRENCY_CODES)/total_values
+			average_per_row['currency_symbols'] += (token in self.CURRENCY_SYMBOLS)/total_values
+			average_per_row['word_lengths'] += len(token)/total_values
+			average_per_row['uppers'] += token.isupper()/total_values
 
-		is_amount = True if floatables/total_values >= 0.5 else False
-		is_currency_name = True if (currency_codes + currency_symbols)/total_values > 0.5
+		scores = defaultdict(float)
 
-		print(f"floatables={floatables}, punctuations={punctuations}, currency_codes={currency_codes}, currency_symbols={currency_symbols}, word_lengths={word_lengths}")
+		scores['currency_name'] = (2 <= average_per_row['word_lengths'] <= 3) + \
+								  (average_per_row['currency_codes'] >= 0.50) + \
+								  (average_per_row['uppers'] > 0) + \
+								  (average_per_row['currency_symbols'] > 0.10)  - \
+								  (average_per_row['floatables'] > 0) - \
+								  (average_per_row['punctuations'] > 0)   
+
+		scores['amount'] = (average_per_row['word_lengths'] >= 3) - \
+						   (average_per_row['currency_codes'] >= 0) -\
+						   (average_per_row['uppers'] > 0) + \
+						   (average_per_row['currency_symbols'] > 0)  + \
+						   (average_per_row['floatables'] > 0.50) 
+
+		scores['description'] = (average_per_row['word_lengths'] > 3) - \
+								(average_per_row['currency_codes'] >= 0.10) - \
+								(average_per_row['currency_symbols'] > 0.10)  - \
+								(average_per_row['floatables'] > 0.20) + \
+								(average_per_row['punctuations'] > 0.10) 
+
+		return scores
 
 	def allocate_columns(self, data: pd.DataFrame = None):
 
+		scores_by_column = defaultdict(lambda: defaultdict(float))
+
 		for c in data.columns:
 
-			scores = self.score_input(data[c])
+			scores_by_column[c] = self.score_input(data[c])
 
 
+		print(scores_by_column)
 
+		collumn_allocation = defaultdict(str)
+
+		for _ in 'amount currency_name description'.split():
+			collumn_allocation[_] = max(scores_by_column, key = lambda k: scores_by_column[k][_])
+
+		print(collumn_allocation)
 
 if __name__ == '__main__':
 
 	ca = ColumnAllocator()
 
-	list_ = ["$",'AUD', 0.091, 'RUB', 'midd', None, 'dsfds', '89.95%', 3, "\u20B9".encode().decode()]
+	df = pd.DataFrame({'dollars': [23.8, 1.950, 19.90],
+				  'crc': ['INR', '$', 'UAH'],
+				  'desc': 'this stгаа шы куфддн ащк Ьшлуб 12/2020'})
 
-	ca.score_input(list_)
+	ca.allocate_columns(df)
