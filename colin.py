@@ -99,8 +99,8 @@ if __name__ == '__main__':
 
 	ca = ColumnAllocator()
 
-	df = pd.DataFrame({'dollars': [23.8, 1.950, 19.90],
-				  'crc': ['INR', '$', 'UAH'],
-				  'desc': 'this stгаа шы куфддн ащк Ьшлуб 12/2020'})
+	df = pd.DataFrame({'dollars': [23.8, 1.950, 19.90, None],
+				  'crc': ['INR', '$', 'UAH', 'JPY'],
+				  'desc': 'this stгаа шы someting -2323куфддн ащк Ьшлуб 12/2020'})
 
 	ca.allocate_columns(df)
