@@ -39,6 +39,8 @@ class ColumnAllocator:
 	CURRENCY_SYMBOLS = {k.encode().decode(): v for k, v in {"\u0024": "USD", "\u00A3": "GBP", "\u00A5": "JPY", "\u0E3F": "THB", "\u20BD": "RUB",
 															"\u20B9": "INR", "\u20AC": "EUR"}.items()}
 
+	CURRENCY_CODE_LENGTHS = {2,3}
+
 	def score_input(self, value_list: Iterable[Any]) -> float:
 
 		average_per_row = defaultdict(float)
@@ -56,7 +58,7 @@ class ColumnAllocator:
 
 		scores = defaultdict(float)
 
-		scores['currency_name'] = (2 <= average_per_row['word_lengths'] <= 3) + \
+		scores['currency_name'] = (average_per_row['word_lengths'] in self.CURRENCY_CODE_LENGTHS) + \
 								  (average_per_row['currency_codes'] >= 0.50) + \
 								  (average_per_row['uppers'] > 0) + \
 								  (average_per_row['currency_symbols'] > 0.10)  - \
